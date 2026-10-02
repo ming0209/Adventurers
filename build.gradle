@@ -1,0 +1,9 @@
+allprojects {
+    group = 'io.github.xzhminecraft.adventurers'
+    version = '0.1.0'
+}
+subprojects {
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+    }
+}

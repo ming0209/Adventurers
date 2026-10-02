@@ -1,0 +1,12 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        maven { url = 'https://maven.minecraftforge.net/' }
+    }
+}
+rootProject.name = 'Adventurers'
+include 'core'
+// Allows the dependency-free simulation to be developed without downloading Minecraft.
+if (!providers.gradleProperty('coreOnly').isPresent()) {
+    include 'forge'
+}
