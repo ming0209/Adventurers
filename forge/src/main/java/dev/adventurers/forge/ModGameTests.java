@@ -100,6 +100,9 @@ public final class ModGameTests {
             if(level.setChunkForced(chunk.x(),chunk.z(),true))forced.add(chunk);
             level.getChunk(chunk.x(),chunk.z());
         }
+        // ENTITY_TICKING requires a radius-two FULL neighbourhood (ChunkMap.prepareEntityTickingChunk).
+        // Load it before starting the tick-based assertion budget; GameTest ticks faster than wall time.
+        for(int dx=-3;dx<=3;dx++)for(int dz=-3;dz<=3;dz++)level.getChunk((city.x()>>4)+dx,(city.z()>>4)+dz);
         mock.snapTo(city.x()+.5,level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,city.x(),city.z()),city.z()+.5);
         mock.getInventory().setItem(0,new ItemStack(Items.OAK_LOG,8));
         var quest=new Quest(world.allocateId(),city.id(),Resource.WOOD,8,world.tick()+24000);world.addQuest(quest);

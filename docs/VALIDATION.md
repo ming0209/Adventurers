@@ -49,12 +49,14 @@
 
 `src/gametest/packs/planet` 仅供测试，覆盖 GameTest 固定使用的世界预设；已验证发行 JAR 不含该覆盖，也不含旧档样本。所有测试世界保持 Git 忽略。
 
+远端进一步验证了 Minecraft 的实体加载前置条件：每个实体区块需要两圈已生成邻区。测试先完成城邦及邻区的加载，再开始按 tick 等待实体就绪，避免 GameTest 无实时限速的时钟在较慢机器上先耗尽断言预算；断言预算仍为 300 tick。最终星球回归还使用 `-XX:ActiveProcessorCount=2` 限制 JVM 处理器数量，8 项全部通过。
+
 ## 产物与边界
 
-本地模组：`forge/build/libs/adventurers-0.2.1.jar`，257376 字节，SHA-256：
+本地模组：`forge/build/libs/adventurers-0.2.1.jar`，257424 字节，SHA-256：
 
 ```text
-85027676d97afcb7485ef83b18b5215af5f77c6b5f0f1be8e49a72e2d0f6a363
+c1cac50845e5d546fff130e9f010cbd5e8e56972e0fccb07c61e08fa4b2d5c69
 ```
 
 GitHub Actions 对分支、PR、版本标签重新构建，发布任务仅在标签构建及两种服务器测试成功后运行。Release 附带 JAR 与 `SHA256SUMS`，远端运行记录可在 Actions/PR 查看。
