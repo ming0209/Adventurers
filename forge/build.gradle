@@ -1,0 +1,35 @@
+plugins {
+    id 'java'
+    id 'net.minecraftforge.gradle' version '7.0.17'
+}
+java.toolchain.languageVersion = JavaLanguageVersion.of(25)
+minecraft {
+    runs {
+        configureEach {
+            workingDir = layout.projectDirectory.dir('run')
+            systemProperty 'eventbus.api.strictRuntimeChecks', 'true'
+        }
+        register('client')
+        register('server') { args '--nogui' }
+        register('gameTestServer') {
+            workingDir = layout.projectDirectory.dir('run-gametest')
+            args '--tests', 'adventurers:*', '--report', 'gametest-results.xml'
+        }
+    }
+}
+repositories {
+    minecraft.mavenizer(it)
+    maven fg.forgeMaven
+    maven fg.minecraftLibsMaven
+    mavenCentral()
+}
+dependencies {
+    implementation project(':core')
+    implementation minecraft.dependency('net.minecraftforge:forge:26.3-66.0.9')
+    annotationProcessor 'net.minecraftforge:eventbus-validator:7.0.6'
+}
+tasks.named('jar') {
+    from project(':core').sourceSets.main.output
+    archiveBaseName = 'adventurers'
+    manifest.attributes('Implementation-Version': project.version)
+}

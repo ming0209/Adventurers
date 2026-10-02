@@ -1,0 +1,24 @@
+plugins {
+    id 'java-library'
+    id 'application'
+}
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(25)
+    withSourcesJar()
+}
+application.mainClass = 'dev.adventurers.core.cli.SimulationCli'
+sourceSets {
+    validation {
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.output
+    }
+}
+tasks.register('simulationTest', JavaExec) {
+    dependsOn validationClasses
+    classpath = sourceSets.validation.runtimeClasspath
+    mainClass = 'dev.adventurers.core.SimulationTests'
+    args layout.buildDirectory.file('test-results/simulation/TEST-simulation.xml').get().asFile.absolutePath
+}
+// The validation suite is an actual executable with assertions and XML results, not a zero-test JUnit run.
+tasks.named('test') { dependsOn simulationTest }
+tasks.named('check') { dependsOn simulationTest }
