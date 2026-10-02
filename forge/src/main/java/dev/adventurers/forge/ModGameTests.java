@@ -21,11 +21,18 @@ public final class ModGameTests {
         FUNCTIONS.register("save_replay",()->ModGameTests::saveReplay);
         FUNCTIONS.register("player_magic",()->ModGameTests::playerMagic);
         FUNCTIONS.register("quests_and_projection",()->ModGameTests::questsAndProjection);
+        FUNCTIONS.register("planet_presets",()->dev.adventurers.forge.worldgen.WorldGenerationGameTests::presets);
+        FUNCTIONS.register("planet_terrain",()->dev.adventurers.forge.worldgen.WorldGenerationGameTests::terrain);
+        FUNCTIONS.register("planet_boundary",()->dev.adventurers.forge.worldgen.WorldGenerationGameTests::boundary);
+        FUNCTIONS.register("planet_atlas",()->dev.adventurers.forge.worldgen.WorldGenerationGameTests::atlas);
     }
     private ModGameTests() {}
     private static void runtime(GameTestHelper helper) {
         var server=helper.getLevel().getServer();
         helper.assertTrue(ServerRuntime.get(server).world()!=null,"server lifecycle did not initialize simulation");
+        boolean planet=Boolean.getBoolean("adventurers.test.planet");
+        helper.assertTrue((server.overworld().getChunkSource().getGenerator() instanceof dev.adventurers.forge.worldgen.PlanetChunkGenerator)==planet,"test world preset was not activated");
+        helper.assertTrue(ServerRuntime.get(server).world().terrain().isPresent()==planet,"simulation and physical terrain are disconnected");
         helper.assertTrue(!new ItemStack(ModItems.CHRONICLE.get()).isEmpty(),"chronicle registry missing");
         try {
             var source=server.createCommandSourceStack();
@@ -47,7 +54,7 @@ public final class ModGameTests {
         var runtime=ServerRuntime.get(helper.getLevel().getServer());
         var mock=helper.makeMockServerPlayerInLevel();
         var world=runtime.world();
-        if(world.cities().isEmpty())world.foundCity(world.planet().regions().stream().filter(r->r.view().elevation()>0).findFirst().orElseThrow());
+        if(world.cities().isEmpty())world.foundCity(world.planet().regions().stream().filter(r->r.view().elevation()>0&&world.canSettle(r)).findFirst().orElseThrow());
         var city=world.cities().iterator().next();
         var profile=runtime.simulation().join(mock.getUUID(),city.id(),PlayerProfile.Origin.SUMMONED);
         helper.assertTrue(runtime.simulation().design(mock.getUUID(),Spell.simple("healing",Spell.Effect.HEAL,Element.FIRE)).valid(),"spell design failed");
@@ -64,7 +71,7 @@ public final class ModGameTests {
     }
     private static void questsAndProjection(GameTestHelper helper) {
         var server=helper.getLevel().getServer();var runtime=ServerRuntime.get(server);var world=runtime.world();
-        if(world.cities().isEmpty())world.foundCity(world.planet().regions().stream().filter(r->r.view().elevation()>0).findFirst().orElseThrow());
+        if(world.cities().isEmpty())world.foundCity(world.planet().regions().stream().filter(r->r.view().elevation()>0&&world.canSettle(r)).findFirst().orElseThrow());
         var city=world.cities().iterator().next();
         var mock=helper.makeMockServerPlayerInLevel();
         runtime.simulation().join(mock.getUUID(),city.id(),PlayerProfile.Origin.BORN);
@@ -81,12 +88,16 @@ public final class ModGameTests {
             helper.assertTrue(mock.getInventory().getItem(0).isEmpty(),"Minecraft inventory was not debited");
             helper.assertTrue(city.stocks().get(Resource.WOOD)==before+8,"city did not receive items");
             helper.assertTrue(dispatcher.execute("advent deliver "+quest.id(),source)==0,"duplicate delivery allowed");
-            world.observe(List.of(new LoadingTier.Observer(city.x(),city.z())));
-            runtime.projection().tick();int first=visibleCitizens(level);
-            helper.assertTrue(first>0 && first<=ModConfig.VISIBLE_CITIZENS.get(),"hot projection not bounded or empty");
-            runtime.projection().tick();helper.assertTrue(first==visibleCitizens(level),"projection duplicated NPCs");
-            world.observe(List.of());runtime.projection().tick();helper.assertTrue(visibleCitizens(level)==0,"cold projection retained entities");
-            helper.succeed();
+            // Full terrain chunks and their entity sections do not become visible in the same tick.
+            helper.succeedWhen(()->{
+                world.observe(List.of(new LoadingTier.Observer(city.x(),city.z())));
+                int limit=world.cities().stream().filter(c->world.tier(c)==LoadingTier.HOT)
+                        .mapToInt(c->Math.min(c.population(),ModConfig.VISIBLE_CITIZENS.get())).sum();
+                runtime.projection().tick();int first=visibleCitizens(level);
+                helper.assertTrue(first>0 && first<=limit,"hot projection count="+first+", per-city total limit="+limit);
+                runtime.projection().tick();helper.assertTrue(first==visibleCitizens(level),"projection duplicated NPCs");
+                world.observe(List.of());runtime.projection().tick();helper.assertTrue(visibleCitizens(level)==0,"cold projection retained entities");
+            });
         }catch(Exception e){throw new IllegalStateException(e);}
     }
     private static int visibleCitizens(net.minecraft.server.level.ServerLevel level) {

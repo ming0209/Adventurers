@@ -22,6 +22,7 @@ public final class ServerRuntime {
     private final Path save;
     private final Simulation simulation;
     private final WorldProjection projection;
+    private final dev.adventurers.forge.worldgen.PlanetAtlasMap atlasMap;
     private final Map<UUID, Long> lastCity = new HashMap<>();
     private long target;
     private boolean paused;
@@ -30,10 +31,20 @@ public final class ServerRuntime {
     private ServerRuntime(MinecraftServer server) throws IOException {
         this.server = server;
         save = server.getWorldPath(LevelResource.ROOT).resolve("data/adventurers/world.bin");
-        WorldModel world = Files.exists(save) ? WorldStore.load(save) : new WorldModel(server.overworld().getSeed(),
-                Planet.genesis(server.overworld().getSeed(), 24, 12), Laws.overworld(), ModConfig.CITY_LIMIT.get(), ModConfig.POPULATION_LIMIT.get());
+        boolean existing=Files.exists(save);
+        var generator=server.overworld().getChunkSource().getGenerator();
+        var terrain=generator instanceof dev.adventurers.forge.worldgen.PlanetChunkGenerator planet?planet.atlas(server.overworld().getSeed()):null;
+        WorldModel world = existing ? WorldStore.load(save) : new WorldModel(server.overworld().getSeed(),
+                terrain==null?Planet.genesis(server.overworld().getSeed(), 24, 12):terrain.simulationPlanet(), Laws.overworld(), ModConfig.CITY_LIMIT.get(), ModConfig.POPULATION_LIMIT.get());
+        if(existing && (world.terrain().isPresent()!=(terrain!=null)))throw new IOException("World generator and saved geography differ; preserve the original world type");
+        if(terrain!=null) {
+            if(world.seed()!=terrain.seed()||world.terrain().isPresent()&&!world.terrain().orElseThrow().settings().equals(terrain.settings()))
+                throw new IOException("Planet seed/size differs from saved geography");
+            world.attachTerrain(terrain);
+        }
         simulation = new Simulation(world); target = world.tick();
         projection = new WorldProjection(this, save.resolveSibling("projection.properties"));
+        atlasMap = new dev.adventurers.forge.worldgen.PlanetAtlasMap(server.overworld(),world);
         LOGGER.info("Adventurers loaded: day={}, cities={}, population={}", WorldTime.day(world.tick()),world.cities().size(),world.population());
     }
     public static void start(MinecraftServer server) {
@@ -53,12 +64,14 @@ public final class ServerRuntime {
     public Simulation simulation() { return simulation; }
     public WorldModel world() { return simulation.world(); }
     public WorldProjection projection() { return projection; }
+    public dev.adventurers.forge.worldgen.PlanetAtlasMap atlasMap() { return atlasMap; }
     public boolean paused() { return paused; }
     public void paused(boolean paused) { this.paused = paused; }
     public void requestDays(int days) {
         target = Math.addExact(target, Math.multiplyExact((long) days, WorldTime.TICKS_PER_DAY));
     }
     public void tick() {
+        world().terrain().ifPresent(terrain->dev.adventurers.forge.worldgen.PlanetBoundary.tick(server.overworld(),terrain.settings()));
         if (paused) return;
         var world = world();
         if (world.phase() == WorldModel.Phase.GENESIS) {
@@ -79,6 +92,7 @@ public final class ServerRuntime {
             var players = server.getPlayerList().getPlayers().stream().filter(p -> p.level().dimension() == Level.OVERWORLD).toList();
             world.observe(players.stream().map(p -> new LoadingTier.Observer(p.getX(),p.getZ())).toList());
             projection.tick();
+            if(server.getTickCount()%100==0)atlasMap.tick();
             for (var player : players) {
                 var city = world.nearest(player.getX(), player.getZ(), 96);
                 long id = city.map(City::id).orElse(-1L);
@@ -100,5 +114,6 @@ public final class ServerRuntime {
     }
     public void greet(ServerPlayer player) {
         player.sendSystemMessage(Component.literal("[冒险人] /advent 打开指引；/advent civilizations 选择文明；右键居民交谈。"));
+        if(world().terrain().isPresent())player.sendSystemMessage(Component.literal("[冒险人] /advent atlas 领取星球演化图；/advent geography 查看当地地理。"));
     }
 }

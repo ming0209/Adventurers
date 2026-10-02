@@ -18,7 +18,7 @@ public final class SimulationTests {
     record Case(String name, Test test) {}
     record Result(String name, Throwable failure, double seconds) {}
     static List<Case> cases() {
-        return List.of(
+        var tests = new ArrayList<>(List.of(
             new Case("calendar and spherical pole crossings", SimulationTests::calendar),
             new Case("resource consumption is atomic", SimulationTests::resources),
             new Case("six phases, cadence and bounded catch-up", SimulationTests::scheduler),
@@ -36,7 +36,9 @@ public final class SimulationTests {
             new Case("snapshot integrity, version and atomic backup", SimulationTests::persistence),
             new Case("multiplayer loading uses the highest tier", SimulationTests::loading),
             new Case("long simulation keeps resources finite and bounded", SimulationTests::longRun)
-        );
+        ));
+        tests.addAll(WorldGenerationTests.cases());
+        return tests;
     }
     public static void main(String[] args) throws Exception {
         var results = new ArrayList<Result>();

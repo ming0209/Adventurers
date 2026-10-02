@@ -23,6 +23,7 @@ public final class WorldModel {
     private Fortune worldFortune = Fortune.healthy();
     private double worldWillReserve = 1;
     private final int cityLimit, populationLimit;
+    private TerrainAtlas terrain;
 
     public WorldModel(long seed, Planet planet, Laws laws, int cityLimit, int populationLimit) {
         if (cityLimit < 1 || cityLimit > 64 || populationLimit < 16 || populationLimit > 100_000) throw new IllegalArgumentException();
@@ -36,6 +37,15 @@ public final class WorldModel {
     public int cityLimit() { return cityLimit; }
     public int populationLimit() { return populationLimit; }
     public Planet planet() { return planet; }
+    public Optional<TerrainAtlas> terrain() { return Optional.ofNullable(terrain); }
+    public void attachTerrain(TerrainAtlas terrain) {
+        if (terrain.seed() != seed || planet.columns() != TerrainSettings.COLUMNS || planet.rows() != TerrainSettings.ROWS)
+            throw new IllegalArgumentException("Terrain and simulation geography disagree");
+        if (this.terrain != null && !this.terrain.settings().equals(terrain.settings()))
+            throw new IllegalArgumentException("Cannot change the geography of an existing world");
+        this.terrain = terrain;
+    }
+    public boolean canSettle(Region region) { return terrain == null || terrain.settlement(region.view().id()).isPresent(); }
     public Laws laws() { return laws; }
     public Phase phase() { return phase; }
     public Fortune worldFortune() { return worldFortune; }
@@ -81,11 +91,12 @@ public final class WorldModel {
     public int population() { return cities.values().stream().mapToInt(City::population).sum(); }
     public City foundCity(Region region) {
         if (cities.size() >= cityLimit || population() + 16 > populationLimit) throw new IllegalStateException("World population/city budget reached");
-        long civId = allocateId(), cityId = allocateId();
         var v = region.view();
+        var site = terrain == null ? null : terrain.settlement(v.id()).orElseThrow(() -> new IllegalStateException("No dry, buildable settlement site in this region"));
+        long civId = allocateId(), cityId = allocateId();
         var city = new City(cityId, civId, v.id(), "城邦·" + cityId,
-                (v.id() % planet.columns() - planet.columns() / 2) * 96,
-                (v.id() / planet.columns() - planet.rows() / 2) * 96);
+                site == null ? (v.id() % planet.columns() - planet.columns() / 2) * 96 : site.x(),
+                site == null ? (v.id() / planet.columns() - planet.rows() / 2) * 96 : site.z());
         city.stocks().add(Resource.FOOD, 24);
         city.stocks().add(Resource.WOOD, 48);
         city.stocks().add(Resource.STONE, 32);

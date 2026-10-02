@@ -35,6 +35,8 @@ public final class AdventCommands {
         root.then(literal("civilizations").executes(c->run(c,AdventCommands::civilizations)));
         root.then(literal("me").executes(c->run(c,AdventCommands::profile)));
         root.then(literal("city").executes(c->run(c,AdventCommands::city)));
+        root.then(literal("atlas").executes(c->run(c,cx->{runtime(cx).atlasMap().give(player(cx));return "手持演化图观看：蓝色为水域，绿色为植被，灰色为山地，金色为城邦，红色为废墟。地貌固定，生态和文明随模拟更新。";})));
+        root.then(literal("geography").executes(c->run(c,AdventCommands::geography)));
         root.then(literal("join").then(argument("civilization",LongArgumentType.longArg(1))
                 .then(argument("origin",StringArgumentType.word()).suggests((c,b)->SharedSuggestionProvider.suggest(List.of("born","summoned","transmigrated"),b))
                         .executes(c->run(c,AdventCommands::join)))));
@@ -83,7 +85,15 @@ public final class AdventCommands {
         return "\n/advent civilizations → /advent join <文明编号> born|summoned|transmigrated\n"
                 +"/advent me、city、history：身份、当地需求、历史\n/advent requests → accept <编号> → deliver <编号>\n"
                 +"/advent meditate、observe <元素英文名>\n/advent design <名称> release|shield|heal|purify <载能> <符文序列>\n"
-                +"示例：/advent design spark release 30 fire:sun:magic:0\n/advent cast spark；/advent spells 查看法术。";
+                +"示例：/advent design spark release 30 fire:sun:magic:0\n/advent cast spark；/advent spells 查看法术。\n"
+                +"星球世界：/advent atlas 领取演化图；/advent geography 查看地势、气候与星球大小。";
+    }
+    private static String geography(CommandContext<CommandSourceStack> c) throws CommandSyntaxException {
+        var p=player(c);var world=runtime(c).world();
+        if(p.level().dimension()!=Level.OVERWORLD)throw new IllegalStateException("请返回星球主世界");
+        var terrain=world.terrain().orElseThrow(()->new IllegalStateException("当前为原版地形；新建世界时选择冒险人星球（小/中/大）"));
+        var column=terrain.column(p.getX(),p.getZ());var settings=terrain.settings();
+        return String.format(Locale.ROOT,"星球：东西周长 %d 格，南北极间距 %d 格；区域 %d\n地势 Y=%d，水位 Y=%d，生物群系=%s，温度=%.1f℃，湿度=%.0f%%，矿化=%.0f%%，魔力=%.2f\n东西跨界回到另一侧；过极点反射纬度并转动经度。",settings.circumference(),settings.poleDistance(),PlanetCoordinates.region(p.getX(),p.getZ(),settings),column.ground(),column.water(),column.biome(),column.temperature(),column.moisture()*100,column.ore()*100,column.mana());
     }
     private static String status(CommandContext<CommandSourceStack> c) {
         var runtime=runtime(c);var w=runtime.world();
