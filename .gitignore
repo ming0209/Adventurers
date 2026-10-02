@@ -3,6 +3,7 @@
 **/run/
 **/run-data/
 **/run-gametest/
+**/run-planet-gametest/
 .idea/
 *.iml
 .classpath

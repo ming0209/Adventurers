@@ -1,3 +1,6 @@
 {
-  "item.adventurers.chronicle": "Adventurer's Chronicle"
+  "item.adventurers.chronicle": "Adventurer's Chronicle",
+  "generator.adventurers.planet_small": "Adventurers Planet (Small)",
+  "generator.adventurers.planet_medium": "Adventurers Planet (Medium)",
+  "generator.adventurers.planet_large": "Adventurers Planet (Large)"
 }
