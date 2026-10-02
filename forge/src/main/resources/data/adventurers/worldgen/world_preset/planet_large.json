@@ -1,0 +1,48 @@
+{
+  "dimensions": {
+    "minecraft:overworld": {
+      "type": "minecraft:overworld",
+      "generator": {
+        "type": "adventurers:planet",
+        "region_size": 384,
+        "terrain_version": 1,
+        "biomes": [
+          "minecraft:ocean",
+          "minecraft:frozen_ocean",
+          "minecraft:beach",
+          "minecraft:desert",
+          "minecraft:plains",
+          "minecraft:forest",
+          "minecraft:jungle",
+          "minecraft:taiga",
+          "minecraft:snowy_plains",
+          "minecraft:stony_peaks",
+          "minecraft:river",
+          "minecraft:frozen_river",
+          "minecraft:swamp"
+        ]
+      }
+    },
+    "minecraft:the_nether": {
+      "type": "minecraft:the_nether",
+      "generator": {
+        "type": "minecraft:noise",
+        "settings": "minecraft:nether",
+        "biome_source": {
+          "type": "minecraft:multi_noise",
+          "preset": "minecraft:nether"
+        }
+      }
+    },
+    "minecraft:the_end": {
+      "type": "minecraft:the_end",
+      "generator": {
+        "type": "minecraft:noise",
+        "settings": "minecraft:end",
+        "biome_source": {
+          "type": "minecraft:the_end"
+        }
+      }
+    }
+  }
+}

@@ -17,6 +17,8 @@ public final class AdventurersMod {
     public static final String ID = "adventurers";
     public AdventurersMod(FMLJavaModLoadingContext context) {
         ModItems.ITEMS.register(context.getModBusGroup());
+        dev.adventurers.forge.worldgen.ModWorldgen.GENERATORS.register(context.getModBusGroup());
+        dev.adventurers.forge.worldgen.ModWorldgen.BIOMES.register(context.getModBusGroup());
         ModGameTests.FUNCTIONS.register(context.getModBusGroup());
         context.registerConfig(net.minecraftforge.fml.config.ModConfig.Type.SERVER,ModConfig.SPEC);
         RegisterCommandsEvent.BUS.addListener(event->AdventCommands.register(event.getDispatcher()));

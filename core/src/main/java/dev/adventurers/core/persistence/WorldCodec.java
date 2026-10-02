@@ -12,7 +12,7 @@ import java.util.zip.CRC32;
 
 /** Explicit, versioned data format. Never uses Java object deserialization. */
 public final class WorldCodec {
-    private static final int MAGIC = 0x41445652, VERSION = 1, MAX_BYTES = 64 * 1024 * 1024;
+    private static final int MAGIC = 0x41445652, VERSION = 2, MAX_BYTES = 64 * 1024 * 1024;
     private WorldCodec() {}
     public static byte[] encode(WorldModel world) throws IOException {
         var buffer = new ByteArrayOutputStream();
@@ -49,6 +49,11 @@ public final class WorldCodec {
             for (var event : world.history()) {
                 out.writeLong(event.tick()); out.writeUTF(event.type()); out.writeUTF(event.subject()); out.writeUTF(event.detail()); out.writeDouble(event.importance());
             }
+            out.writeBoolean(world.terrain().isPresent());
+            if (world.terrain().isPresent()) {
+                var settings = world.terrain().orElseThrow().settings();
+                out.writeInt(settings.regionSize()); out.writeInt(settings.version());
+            }
         }
         byte[] payload = buffer.toByteArray();
         if (payload.length > MAX_BYTES) throw new IOException("World snapshot exceeds budget");
@@ -63,7 +68,8 @@ public final class WorldCodec {
         if (data.length > MAX_BYTES + 20) throw new IOException("Oversized snapshot");
         try (var envelope = new DataInputStream(new ByteArrayInputStream(data))) {
             if (envelope.readInt() != MAGIC) throw new IOException("Not an Adventurers snapshot");
-            if (envelope.readInt() != VERSION) throw new IOException("Unsupported snapshot version; original save preserved");
+            int version = envelope.readInt();
+            if (version != 1 && version != VERSION) throw new IOException("Unsupported snapshot version; original save preserved");
             int size = count(envelope, MAX_BYTES); long checksum = envelope.readLong();
             if (envelope.available() != size) throw new IOException("Truncated or trailing snapshot data");
             byte[] payload = envelope.readNBytes(size);
@@ -112,6 +118,7 @@ public final class WorldCodec {
                 }
                 int events = count(in, 256);
                 for (int i = 0; i < events; i++) world.record(new WorldEvent(in.readLong(),in.readUTF(),in.readUTF(),in.readUTF(),in.readDouble()));
+                if (version >= 2 && in.readBoolean()) world.attachTerrain(new TerrainAtlas(seed,new TerrainSettings(in.readInt(),in.readInt())));
                 if (in.available() != 0) throw new IOException("Trailing payload data");
                 validate(world);
                 return world;

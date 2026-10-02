@@ -1,0 +1,10 @@
+{
+  "pack": {
+    "description": "Adventurers planet integration fixture; never included in the mod JAR",
+    "min_format": [
+      97,
+      1
+    ],
+    "max_format": 121
+  }
+}

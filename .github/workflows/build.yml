@@ -23,6 +23,10 @@ jobs:
         env:
           JAVA_TOOL_OPTIONS: -Dorg.gradle.java.installations.fromEnv=JAVA_HOME_8_X64,JAVA_HOME_25_X64
         run: ./gradlew -Porg.gradle.java.installations.fromEnv=JAVA_HOME_8_X64,JAVA_HOME_25_X64 :core:check :forge:build :forge:runGameTestServer --no-daemon
+      - name: Verify the actual planet world preset
+        env:
+          JAVA_TOOL_OPTIONS: -Dorg.gradle.java.installations.fromEnv=JAVA_HOME_8_X64,JAVA_HOME_25_X64
+        run: ./gradlew -Porg.gradle.java.installations.fromEnv=JAVA_HOME_8_X64,JAVA_HOME_25_X64 -PplanetTest :forge:runGameTestServer --no-daemon
       - name: Create distribution checksums
         working-directory: forge/build/libs
         run: sha256sum adventurers-*.jar > SHA256SUMS
@@ -36,6 +40,7 @@ jobs:
             core/build/reports/tests/
             core/build/test-results/
             forge/run-gametest/gametest-results.xml
+            forge/run-planet-gametest/gametest-results.xml
   release:
     name: Publish pre-release
     needs: build

@@ -12,8 +12,11 @@ minecraft {
         register('client')
         register('server') { args '--nogui' }
         register('gameTestServer') {
-            workingDir = layout.projectDirectory.dir('run-gametest')
+            def planetTest = providers.gradleProperty('planetTest').isPresent()
+            workingDir = layout.projectDirectory.dir(planetTest ? 'run-planet-gametest' : 'run-gametest')
+            systemProperty 'adventurers.test.planet', planetTest.toString()
             args '--tests', 'adventurers:*', '--report', 'gametest-results.xml'
+            if (planetTest) args '--packs', layout.projectDirectory.dir('src/gametest/packs').asFile.absolutePath
         }
     }
 }

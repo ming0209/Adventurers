@@ -2,6 +2,8 @@
 
 使用中文向用户说明进度和结果。先阅读 README.md、docs/IMPLEMENTATION.md 与 docs/ARCHITECTURE.md，保持已实现、简化实现和未实现功能的描述准确。
 
+用户指定的开发优先级：世界生成 → NPC 社会关系、师徒与知识传承 → 探索、护送与动态任务 → 炼金加工、材料与装备玩法。具体剩余范围记录在 docs/IMPLEMENTATION.md，不把可玩子集描述为整个领域完成。
+
 ## GitHub 交付
 
 用户已要求：今后完成代码修改后，提交代码、推送到 GitHub、创建 Pull Request，并发布对应 Release；除非用户为当前任务另有说明，沿用此流程。

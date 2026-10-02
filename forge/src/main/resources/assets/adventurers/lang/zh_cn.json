@@ -1,3 +1,6 @@
 {
-  "item.adventurers.chronicle": "冒险人手记"
+  "item.adventurers.chronicle": "冒险人手记",
+  "generator.adventurers.planet_small": "冒险人星球（小）",
+  "generator.adventurers.planet_medium": "冒险人星球（中）",
+  "generator.adventurers.planet_large": "冒险人星球（大）"
 }

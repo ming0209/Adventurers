@@ -73,7 +73,7 @@ public final class EnvironmentSystems {
             var region = c.world().planet().region(old.id());
             if (region.habitable() && region.view().genome().cognition() >= .6 && region.view().genome().sociality() >= .45
                     && c.world().cities().size() < c.world().cityLimit() && c.world().population() + 16 <= c.world().populationLimit()
-                    && c.world().cities().stream().noneMatch(city -> city.region() == old.id())) {
+                    && c.world().cities().stream().noneMatch(city -> city.region() == old.id()) && c.world().canSettle(region)) {
                 var city = c.world().foundCity(region);
                 c.emit("city.founded", Long.toString(city.id()), city.name() + "由社会性物种形成", .95);
             }
@@ -84,7 +84,8 @@ public final class EnvironmentSystems {
         Geology() { super("geology", WorldTime.TICKS_PER_DAY * 24, "plates,terrain", "slope,water", "erosion", "sediment,elevation"); }
         public List<Region.View> perceive(LoopContext c) {
             snapshot = c.world().planet().regions().stream().map(Region::view).toList();
-            return c.world().phase() == WorldModel.Phase.GENESIS && c.world().laws().allows(Laws.Domain.PHYSICS) ? snapshot : List.of();
+            // Chunk geography was already eroded before generation and must remain independent of exploration order.
+            return c.world().terrain().isEmpty() && c.world().phase() == WorldModel.Phase.GENESIS && c.world().laws().allows(Laws.Domain.PHYSICS) ? snapshot : List.of();
         }
         protected double demand(LoopContext c, Region.View r) { return 1; }
         protected void act(LoopContext c, Region.View r, double urgency) {

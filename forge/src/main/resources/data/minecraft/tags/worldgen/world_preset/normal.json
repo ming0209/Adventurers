@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "adventurers:planet_small",
+    "adventurers:planet_medium",
+    "adventurers:planet_large"
+  ]
+}
