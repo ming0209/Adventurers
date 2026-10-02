@@ -56,6 +56,10 @@ GameTest 使用独立的 `forge/run-gametest` 测试世界。普通开发服务�
 
 Codex 云环境可执行 `scripts/setup-cloud.sh` 安装经过校验的工具链，再用 `python3 scripts/cloud-build.py :core:check :forge:build`。该脚本使用现有平台代理和系统 CA，不需要 GitHub Token。
 
+## 协作与发布
+
+开发改动通过独立分支与 Pull Request 交接，交付约定见 [AGENTS.md](AGENTS.md)。GitHub Actions 在推送与 PR 上执行构建和测试；推送 `v*` 版本标签时，只有同次构建和测试成功，才会上传 JAR、`SHA256SUMS` 并发布 GitHub 预发布版本。发布前须同步项目版本与 `docs/releases/<版本>.md`。已发布版本不会被流程覆盖。
+
 ## 存档
 
 模拟数据位于 `<世界>/data/adventurers/world.bin`，每分钟和正常停服时保存，保留上一份 `.bak`。格式带版本、长度边界和 CRC；写入采用临时文件加原子替换。发现损坏会停止读写，不会用空世界覆盖存档。恢复备份前应先复制保留故障文件。

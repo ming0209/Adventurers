@@ -23,12 +23,35 @@ jobs:
         env:
           JAVA_TOOL_OPTIONS: -Dorg.gradle.java.installations.fromEnv=JAVA_HOME_8_X64,JAVA_HOME_25_X64
         run: ./gradlew -Porg.gradle.java.installations.fromEnv=JAVA_HOME_8_X64,JAVA_HOME_25_X64 :core:check :forge:build :forge:runGameTestServer --no-daemon
+      - name: Create distribution checksums
+        working-directory: forge/build/libs
+        run: sha256sum adventurers-*.jar > SHA256SUMS
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: adventurers-build-and-tests
           path: |
             forge/build/libs/*.jar
+            forge/build/libs/SHA256SUMS
             core/build/reports/tests/
             core/build/test-results/
             forge/run-gametest/gametest-results.xml
+  release:
+    name: Publish pre-release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: adventurers-build-and-tests
+          path: artifacts
+      - name: Upload verified assets and publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ADVENTURERS_RELEASE_TAG: ${{ github.ref_name }}
+        run: scripts/publish-release.sh
