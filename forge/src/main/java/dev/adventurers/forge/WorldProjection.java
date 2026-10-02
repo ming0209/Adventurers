@@ -4,6 +4,7 @@ import dev.adventurers.core.civilization.*;
 import dev.adventurers.core.life.Citizen;
 import dev.adventurers.core.world.LoadingTier;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.*;
@@ -11,6 +12,8 @@ import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.phys.Vec3;
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
@@ -44,6 +47,8 @@ public final class WorldProjection {
                     int dx=(int)(person.id()%7)-3,dz=(int)((person.id()/7)%7)-3;
                     var pos=safeSurface(city.x()+dx*2,city.z()+dz*2);
                     if(pos==null)continue;
+                    // Loaded block data can precede entity sections; do not create invisible duplicate shells.
+                    if(!level.areEntitiesActuallyLoadedAndTicking(ChunkPos.containing(pos)))continue;
                     entity=EntityTypes.VILLAGER.create(level,EntitySpawnReason.COMMAND);
                     if(entity==null)continue;
                     entity.snapTo(pos.getX()+.5,pos.getY(),pos.getZ()+.5,0,0);
@@ -69,7 +74,9 @@ public final class WorldProjection {
         if(!level.hasChunk(x>>4,z>>4))return null;
         var pos=new BlockPos(x,level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,x,z),z);
         if(!level.getBlockState(pos.below()).getFluidState().isEmpty())return null;
-        if(!level.getBlockState(pos).isAir() || !level.getBlockState(pos.above()).isAir())return null;
+        if(!level.getBlockState(pos.below()).isFaceSturdy(level,pos.below(),Direction.UP))return null;
+        // Grass/flowers have no collision and are valid standing space; leaves, walls and liquids are not.
+        if(!level.noCollision(null,EntityTypes.VILLAGER.getDimensions().makeBoundingBox(Vec3.atBottomCenterOf(pos)),true))return null;
         return pos;
     }
     public void placePlayer(ServerPlayer player,City city) {

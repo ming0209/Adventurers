@@ -6,9 +6,11 @@ import dev.adventurers.core.player.PlayerProfile;
 import dev.adventurers.core.player.Quest;
 import dev.adventurers.core.world.*;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraftforge.registries.DeferredRegister;
 import java.util.*;
 import java.util.function.Consumer;
@@ -76,7 +78,28 @@ public final class ModGameTests {
         var mock=helper.makeMockServerPlayerInLevel();
         runtime.simulation().join(mock.getUUID(),city.id(),PlayerProfile.Origin.BORN);
         var level=server.overworld();
-        for(int dx=-1;dx<=1;dx++)for(int dz=-1;dz<=1;dz++)level.getChunk((city.x()>>4)+dx,(city.z()>>4)+dz);
+        // A grass-covered standing space must work, but a solid canopy at head height must be rejected.
+        var feet=helper.absolutePos(new BlockPos(1,1,1)).atY(300);
+        var original=List.of(level.getBlockState(feet.below()),level.getBlockState(feet),level.getBlockState(feet.above()));
+        try {
+            level.setBlockAndUpdate(feet.below(),Blocks.GRASS_BLOCK.defaultBlockState());
+            level.setBlockAndUpdate(feet,Blocks.SHORT_GRASS.defaultBlockState());
+            level.setBlockAndUpdate(feet.above(),Blocks.AIR.defaultBlockState());
+            helper.assertTrue(feet.equals(runtime.projection().safeSurface(feet.getX(),feet.getZ())),"grass incorrectly prevents a safe landing");
+            level.setBlockAndUpdate(feet.above(),Blocks.OAK_LEAVES.defaultBlockState());
+            helper.assertTrue(runtime.projection().safeSurface(feet.getX(),feet.getZ())==null,"landing ignores head collision");
+        }finally {
+            level.setBlockAndUpdate(feet.below(),original.get(0));
+            level.setBlockAndUpdate(feet,original.get(1));
+            level.setBlockAndUpdate(feet.above(),original.get(2));
+        }
+        var forced=new ArrayList<net.minecraft.world.level.ChunkPos>();
+        // The embedded mock client sends no movement packets, so snapTo cannot activate player chunk tickets.
+        for(int dx=-1;dx<=1;dx++)for(int dz=-1;dz<=1;dz++) {
+            var chunk=new net.minecraft.world.level.ChunkPos((city.x()>>4)+dx,(city.z()>>4)+dz);
+            if(level.setChunkForced(chunk.x(),chunk.z(),true))forced.add(chunk);
+            level.getChunk(chunk.x(),chunk.z());
+        }
         mock.snapTo(city.x()+.5,level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,city.x(),city.z()),city.z()+.5);
         mock.getInventory().setItem(0,new ItemStack(Items.OAK_LOG,8));
         var quest=new Quest(world.allocateId(),city.id(),Resource.WOOD,8,world.tick()+24000);world.addQuest(quest);
@@ -90,6 +113,7 @@ public final class ModGameTests {
             helper.assertTrue(dispatcher.execute("advent deliver "+quest.id(),source)==0,"duplicate delivery allowed");
             // Full terrain chunks and their entity sections do not become visible in the same tick.
             helper.succeedWhen(()->{
+                for(var chunk:forced)helper.assertTrue(level.areEntitiesActuallyLoadedAndTicking(chunk),"city entity chunks not active yet: "+chunk);
                 world.observe(List.of(new LoadingTier.Observer(city.x(),city.z())));
                 int limit=world.cities().stream().filter(c->world.tier(c)==LoadingTier.HOT)
                         .mapToInt(c->Math.min(c.population(),ModConfig.VISIBLE_CITIZENS.get())).sum();
@@ -97,6 +121,7 @@ public final class ModGameTests {
                 helper.assertTrue(first>0 && first<=limit,"hot projection count="+first+", per-city total limit="+limit);
                 runtime.projection().tick();helper.assertTrue(first==visibleCitizens(level),"projection duplicated NPCs");
                 world.observe(List.of());runtime.projection().tick();helper.assertTrue(visibleCitizens(level)==0,"cold projection retained entities");
+                for(var chunk:forced)level.setChunkForced(chunk.x(),chunk.z(),false);
             });
         }catch(Exception e){throw new IllegalStateException(e);}
     }

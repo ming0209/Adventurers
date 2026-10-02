@@ -1,6 +1,6 @@
 # 冒险人 · Adventurers
 
-面向 **Minecraft 26.3 / Forge 66.0.9 / Java 25** 的文明演化模组。当前为 `0.2.0` 开发版本：新增真实星球地形、三种世界大小、跨界航行和演化地图，保留文明、任务与符文玩法。**两份设计文档中的远期功能仍在开发中**。
+面向 **Minecraft 26.3 / Forge 66.0.9 / Java 25** 的文明演化模组。当前为 `0.2.1` 开发版本：新增真实星球地形、三种世界大小、跨界航行和演化地图，保留文明、任务与符文玩法。**两份设计文档中的远期功能仍在开发中**。
 
 原始设计保存在 [CONTEXT.md](docs/design/CONTEXT.md) 和 [SYSTEMS.md](docs/design/SYSTEMS.md)。已实现、简化和未实现的部分逐项记录在 [实现范围](docs/IMPLEMENTATION.md)，架构见 [ARCHITECTURE.md](docs/ARCHITECTURE.md)。
 
@@ -8,7 +8,7 @@
 
 ## 进入游戏
 
-安装 Java 25、Minecraft 26.3 和 Forge **66.0.9**。从 [GitHub Releases](https://github.com/xzh-minecraft-server/Adventurers/releases) 下载 `adventurers-0.2.0.jar`，放入客户端和服务器的 `mods` 目录；自行构建的文件在 `forge/build/libs/`。模组不依赖额外动画库或在线 AI 服务。
+安装 Java 25、Minecraft 26.3 和 Forge **66.0.9**。从 [GitHub Releases](https://github.com/xzh-minecraft-server/Adventurers/releases) 下载 `adventurers-0.2.1.jar`，放入客户端和服务器的 `mods` 目录；自行构建的文件在 `forge/build/libs/`。模组不依赖额外动画库或在线 AI 服务。
 
 1. 新建世界，在“世界类型”中选择**冒险人星球（小 / 中 / 大）**。进入后等待提示“文明已涌现”；生成阶段在服务器中分帧推进。原版类型和旧世界仍可使用原有文明玩法。
 2. 输入 `/advent civilizations`，查看可以选择的文明。
@@ -84,6 +84,6 @@ Codex 云环境可执行 `scripts/setup-cloud.sh` 安装经过校验的工具链
 
 建筑呈现进度单独保存在同目录的 `projection.properties`；应与整个 Minecraft 世界一起备份。服务器进程、实体句柄和热区状态不会写入核心存档，重启后根据玩家位置重建。
 
-`0.2.0` 读取 `0.1.0` 的格式 1 存档，保存时升级为格式 2，保留原版地形、城邦坐标、玩家身份与进度。旧版模组不能读取升级后的格式 2；需要回退时恢复升级前的整个世界备份。星球大小、种子和地形算法版本随存档固定，不能在同一个世界中更换。星球图还使用 Minecraft 自带的地图存档，备份时不要只复制 `world.bin`。
+`0.2.1` 读取 `0.1.0` 的格式 1 存档，保存时升级为格式 2，保留原版地形、城邦坐标、玩家身份与进度。旧版模组不能读取升级后的格式 2；需要回退时恢复升级前的整个世界备份。星球大小、种子和地形算法版本随存档固定，不能在同一个世界中更换。星球图还使用 Minecraft 自带的地图存档，备份时不要只复制 `world.bin`。
 
 许可证：仓库原有的 [GPL-3.0](LICENSE)。
